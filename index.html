@@ -81,7 +81,7 @@
 
 <body>
     <div id="container">
-    <p>Toutes les réponses doivent être données en décimale.</p>
+    <p>Toutes les réponses doivent être données en notation décimale.</p>
     </div>
     <script language="javascript">
         
@@ -232,7 +232,7 @@
                         const form = label.parentNode
                         /* le corrigé */
                         var txtReponse = `<p class="left">Le masque est composé de ${form.masque} "1"</p>`
-                        txtReponse += `<p>${ip_bin(form.masque_dec).join('.')}</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(form.masque_dec), form.masque, form.masque, "#ff6347", "#3cb371", "#1e90ff")}</p>`
                         txtReponse += '<p class="left">En décimal, cela donne :</p>'
                         txtReponse += `<p>${form.reponse}</p>`
                         label.innerHTML = txtReponse
@@ -366,7 +366,7 @@
                 form.broadcast = broadcast(form.ip, form.masque)
                 form.reponse = form.broadcast.join(".")
                 /* l'énoncé */
-                form.sujet = `L'identifiant de l'hôte ${form.ip.join(".")}/${form.masque} sur son réseau est :`
+                form.sujet = `L'adresse de diffusion (broadcast) du réseau d'adresse IP ${form.ip.join(".")}/${form.masque} est :`
                 form.innerHTML = `
                     <label name="question">${form.sujet}</label>
                     <input type="text" name="rep"></input>
@@ -389,9 +389,9 @@
                         /* le corrigé */
                         var txtReponse = `<p class="left">Le masque du réseau est :</p>`
                         txtReponse += `<p>${en_couleur(ip_bin(form.masque_dec), form.masque, form.masque, "#ff6347", "#3cb371", "#1e90ff")}</p>`
-                        txtReponse += `<p class="left">L'adresse de cet hôte en binaire est :</p>`
+                        txtReponse += `<p class="left">L'adresse de ce réseau en binaire est :</p>`
                         txtReponse += `<p>${en_couleur(ip_bin(form.ip), form.masque, form.masque, "#ff6347", "#3cb371", "#1e90ff")}</p>`
-                        txtReponse += `<p class="left">Pour obtenir l'adresse de broadcast, on remplace tous les bits de la partie hôte par "1" :</p>`
+                        txtReponse += `<p class="left">Pour obtenir l'adresse de broadcast, on remplace tous les bits de la <font color="#1e90ff">partie hôte</font> par "1" :</p>`
                         txtReponse += `<p>${en_couleur(ip_bin(form.broadcast), form.masque, form.masque, "#ff6347", "#3cb371", "#1e90ff")}</p>`
                         txtReponse += `<p class="left">En décimal, l'adresse de broadcast est :</p>`
                         txtReponse += `<p>${form.reponse}</p>`
