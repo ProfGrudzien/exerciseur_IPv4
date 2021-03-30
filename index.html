@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Entrainement IPv4</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            font-size: 24pt;
+            background-color: white}
+        input {
+            font-size: 24pt;}
+        input[type=number], input[type=text] { 
+            -moz-appearance: textfield;
+            appearance: textfield;
+            height: 50px;
+            width: 300px;
+            margin: 4px;
+            text-align: center;}
+        input::-webkit-inner-spin-button,
+        input::-webkit-outer-spin-button { 
+            -webkit-appearance: none;
+            margin:0;}
+        input::-o-inner-spin-button,
+        input::-o-outer-spin-button { 
+            -o-appearance: none;
+            margin:0;}
+        input[type=button] {
+            margin-right: 5px;
+        }
+        span.math{
+            font-size: 30pt;
+            white-space: nowrap;}
+        .aDroite{
+            text-align: right;
+        }
+        div.correction{
+            text-align: center;
+            margin-top: 20px;
+            color: blue;
+            }
+        div.soustractions {
+            margin: auto;
+            width: 300px;
+            text-align: left;}
+        table {
+            border-collapse: collapse;
+            margin: auto;}
+        table.division {
+            display: inline;
+            border: none;
+            margin: 20px;
+        }
+        td {
+            border:1px solid black;
+            vertical-align: middle;
+            text-align: center;
+            width: 120px;
+        }
+        table.division td {
+            border: none;
+            width: auto;
+            padding: 10px;
+        }
+        table.division td.borderRight {
+            border-right: 1px solid black;
+        }
+        table.division td.borderBottom {
+            border-bottom: 1px solid black;
+        }
+        p.left {
+            width: 100%;
+            text-align: left;
+            padding-left: 50px;
+        }
+        fieldset {
+            margin-bottom: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+    <p>Toutes les réponses doivent être données en décimale.</p>
+    </div>
+    <script language="javascript">
+        
+        function ip_bin(ip) {
+        /* retourne en binaire une ip donnée en décimal */
+            return ip.map(d => {
+                var b = d.toString(2)
+                while (b.length < 8) {
+                    b = "0" + b
+                }
+                return b
+            })
+        }
+        
+        function ip_dec(ip) {
+        /* retourne en décimal une ip donnée en binaire */
+            return ip.map(b => parseInt(b, 2))
+        }
+        
+        function masque(n) {
+        /* retourne le masque (en décimal) de longueur n */
+            binaire = []
+            for (i=0; i<4; i++) {
+                if (8+i*8<n) {
+                    binaire.push("11111111")
+                } else if (i*8>n) {
+                    binaire.push("00000000")
+                } else {
+                    binaire.push("1".repeat(n-i*8) + "0".repeat(8-n+i*8))
+                }
+            }
+            return ip_dec(binaire)
+        }
+        
+        function net_id(ip, n) {
+        /* retourne l'adresse du réseau à partir de l'ip d'un hôte et de la longueur du masque */
+            net = []
+            for (i=0; i<4; i++) {
+                if (8+i*8<n) {
+                    net.push(ip[i])
+                } else if (i*8>n) {
+                    net.push(0)
+                } else {
+                    const bin = "1".repeat(n-i*8) + "0".repeat(8-n+i*8)
+                    net.push(parseInt(bin, 2) & ip[i])
+                }
+            }
+            return net
+        }
+        
+        function host_id(ip, n) {
+        /* retourne le numéro de l'hôte (en binaire) à partir de l'ip de l'hôte et de la longueur du masque */
+            return Array.from(ip_bin(ip).join("")).slice(n, 31).join("")
+        }
+        
+        function broadcast(ip, n) {
+        /* retourne l'adresse de broadcast à partir de l'adresse d'un hôte et de la longueur du masque */
+            brd = []
+            for (let i=0; i<4; i++) {
+                if (8+i*8<n) {
+                    brd.push(ip[i])
+                } else if (i*8>n) {
+                    brd.push(255)
+                } else {
+                    const net_bin = ip_bin(ip)[i]
+                    const m_bin = ip_bin(masque(n))[i]
+                    var bin = ""
+                    for (let j=0; j<8; j++) {
+                        if (m_bin[j] == "1") {
+                            bin = bin + net_bin[i]
+                        } else {
+                            bin = bin + "1"
+                        }
+                    }
+                    brd.push(parseInt(bin, 2))
+                }
+            }
+            return brd
+        }
+        
+        function incremente(ip) {
+        /* retourne l'ip suivante */
+            const next_ip = [].concat(ip);
+            n = 3
+            while (next_ip[n]==255) {
+                next_ip[n] = 0
+                n = n - 1
+            }
+            next_ip[n] = next_ip[n] + 1
+            return next_ip
+        }
+        
+        function decremente(ip) {
+        /* retourne l'ip précédente */
+            const prev_ip = [].concat(ip);
+            n = 3
+            while (prev_ip[n]==0) {
+                prev_ip[n] = 255
+                n = n - 1
+            }
+            prev_ip[n] = prev_ip[n] - 1
+            return prev_ip
+        }
+        
+        function en_couleur(ip, a, b, c1, c2, c3) {
+            /* coupe l'ip en trois parties (aux bits a et b) et colorie les trois morceaux grâce aux couleurs c1, c2 et c3 */
+            const p = a + Math.floor(a/8)
+            const q = b + Math.floor(a/8)
+            const L = Array.from(ip.join("."))
+            return `<font color=${c1}>${L.slice(0, p).join("")}</font><font color=${c2}>${L.slice(p, q).join("")}</font><font color=${c3}>${L.slice(q, L.length-1).join("")}</font>`
+        }
+        
+        const liste_questions = [
+            () => {
+                const fieldset = document.createElement("fieldset");
+                const legend = document.createElement("legend");
+                const form = document.createElement("form");
+                fieldset.appendChild(legend);
+                fieldset.appendChild(form);
+                /* le titre */
+                legend.textContent = "Question 1";
+                /* les données */
+                form.ip_host = [Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)]
+                form.masque = 16 + Math.floor(Math.random() * 13)
+                form.ip = net_id(form.ip_host, form.masque)
+                form.masque_dec = masque(form.masque)
+                form.reponse = form.masque_dec.join(".")
+                /* l'énoncé */
+                form.sujet = `Le masque du réseau d'adresse ${form.ip.join(".")}/${form.masque} est :`
+                form.innerHTML = `
+                    <label name="question">${form.sujet}</label>
+                    <input type="text" name="rep"></input>
+                    <input type="submit" value="Vérifier"/>
+                    <label></label>
+                    <div class="correction" name="correction"><div class="aDroite"><input type="button" value="Correction"/></div></div>
+                `;
+                form.handleEvent = (event) => {
+                    if (event.target.type == "submit") {
+                        event.preventDefault()
+                        const entry = event.target.previousElementSibling
+                        const label = event.target.nextElementSibling
+                        const form = entry.parentNode
+                        /* la vérification */
+                        label.innerHTML = (entry.value == form.reponse) ? "Vrai" : "Faux"
+                    }
+                    if (event.target.type == "button") {
+                        const label = event.target.parentNode.parentNode
+                        const form = label.parentNode
+                        /* le corrigé */
+                        var txtReponse = `<p class="left">Le masque est composé de ${form.masque} "1"</p>`
+                        txtReponse += `<p>${ip_bin(form.masque_dec).join('.')}</p>`
+                        txtReponse += '<p class="left">En décimal, cela donne :</p>'
+                        txtReponse += `<p>${form.reponse}</p>`
+                        label.innerHTML = txtReponse
+                    }
+                };
+                form.addEventListener("click", form.handleEvent)
+                return fieldset;
+            },
+            () => {
+                const fieldset = document.createElement("fieldset");
+                const legend = document.createElement("legend");
+                const form = document.createElement("form");
+                fieldset.appendChild(legend);
+                fieldset.appendChild(form);
+                /* le titre */
+                legend.textContent = "Question 2";
+                /* les données */
+                form.ip = [Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)]
+                form.masque = 16 + Math.floor(Math.random() * 13)
+                form.host = host_id(form.ip, form.masque)
+                while (form.host.indexOf("0")==-1 || form.host.indexOf("1")==-1) {
+                    form.ip = [Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)]
+                    form.host = host_id(form.ip, form.masque)
+                }
+                form.masque_dec = masque(form.masque)
+                form.net = net_id(form.ip, form.masque)
+                form.reponse = form.net.join(".")
+                /* l'énoncé */
+                form.sujet = `L'hôte ${form.ip.join(".")}/${form.masque} appartient au réseau d'adresse ip :`
+                form.innerHTML = `
+                    <label name="question">${form.sujet}</label>
+                    <input type="text" name="rep"></input>
+                    <input type="submit" value="Vérifier"/>
+                    <label></label>
+                    <div class="correction" name="correction"><div class="aDroite"><input type="button" value="Correction"/></div></div>
+                `;
+                form.handleEvent = (event) => {
+                    if (event.target.type == "submit") {
+                        event.preventDefault()
+                        const entry = event.target.previousElementSibling
+                        const label = event.target.nextElementSibling
+                        const form = entry.parentNode
+                        /* la vérification */
+                        label.innerHTML = (entry.value == form.reponse) ? "Vrai" : "Faux"
+                    }
+                    if (event.target.type == "button") {
+                        const label = event.target.parentNode.parentNode
+                        const form = label.parentNode
+                        /* le corrigé */
+                        var txtReponse = `<p class="left">Le masque du réseau est :</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(form.masque_dec), form.masque, form.masque, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += `<p class="left">L'adresse de cet hôte en binaire est :</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(form.ip), form.masque, form.masque, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += `<p class="left">En appliquant le ET bit à bit, on obtient l'adresse réseau :</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(form.net), form.masque, form.masque, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += '<p class="left">En décimal, cette adresse est :</p>'
+                        txtReponse += `<p>${form.reponse}</p>`
+                        label.innerHTML = txtReponse
+                    }
+                };
+                form.addEventListener("click", form.handleEvent)
+                return fieldset;
+            },
+            () => {
+                const fieldset = document.createElement("fieldset");
+                const legend = document.createElement("legend");
+                const form = document.createElement("form");
+                fieldset.appendChild(legend);
+                fieldset.appendChild(form);
+                /* le titre */
+                legend.textContent = "Question 3";
+                /* les données */
+                form.ip = [Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)]
+                form.masque = 20 + Math.floor(Math.random() * 9)
+                form.masque_dec = masque(form.masque)
+                form.host = host_id(form.ip, form.masque)
+                while (form.host.indexOf("0")==-1 || form.host.indexOf("1")==-1) {
+                    form.ip = [Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)]
+                    form.host = host_id(form.ip, form.masque)
+                }
+                form.reponse = parseInt(form.host,2)
+                /* l'énoncé */
+                form.sujet = `L'identifiant de l'hôte ${form.ip.join(".")}/${form.masque} sur son réseau est :`
+                form.innerHTML = `
+                    <label name="question">${form.sujet}</label>
+                    <input type="text" name="rep"></input>
+                    <input type="submit" value="Vérifier"/>
+                    <label></label>
+                    <div class="correction" name="correction"><div class="aDroite"><input type="button" value="Correction"/></div></div>
+                `;
+                form.handleEvent = (event) => {
+                    if (event.target.type == "submit") {
+                        event.preventDefault()
+                        const entry = event.target.previousElementSibling
+                        const label = event.target.nextElementSibling
+                        const form = entry.parentNode
+                        /* la vérification */
+                        label.innerHTML = (entry.value == form.reponse) ? "Vrai" : "Faux"
+                    }
+                    if (event.target.type == "button") {
+                        const label = event.target.parentNode.parentNode
+                        const form = label.parentNode
+                        /* le corrigé */
+                        var txtReponse = `<p class="left">Le masque du réseau est :</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(form.masque_dec), form.masque, form.masque, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += `<p class="left">L'adresse de cet hôte en binaire est :</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(form.ip), form.masque, form.masque, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += `<p class="left">On ne garde que les bits de l'adresse ip correspondant aux "0" du masque :</p>`
+                        txtReponse += `<p><font color="#1e90ff">${form.host}</font></p>`
+                        txtReponse += `<p class="left">En décimal, l'identifiant de l'hôte est :</p>`
+                        txtReponse += `<p>${form.reponse}</p>`
+                        label.innerHTML = txtReponse
+                    }
+                };
+                form.addEventListener("click", form.handleEvent)
+                return fieldset;
+            },
+            () => {
+                const fieldset = document.createElement("fieldset");
+                const legend = document.createElement("legend");
+                const form = document.createElement("form");
+                fieldset.appendChild(legend);
+                fieldset.appendChild(form);
+                /* le titre */
+                legend.textContent = "Question 4";
+                /* les données */
+                form.host = [Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)]
+                form.masque = 16 + Math.floor(Math.random() * 13)
+                form.ip = net_id(form.host, form.masque)
+                form.masque_dec = masque(form.masque)
+                form.broadcast = broadcast(form.ip, form.masque)
+                form.reponse = form.broadcast.join(".")
+                /* l'énoncé */
+                form.sujet = `L'identifiant de l'hôte ${form.ip.join(".")}/${form.masque} sur son réseau est :`
+                form.innerHTML = `
+                    <label name="question">${form.sujet}</label>
+                    <input type="text" name="rep"></input>
+                    <input type="submit" value="Vérifier"/>
+                    <label></label>
+                    <div class="correction" name="correction"><div class="aDroite"><input type="button" value="Correction"/></div></div>
+                `;
+                form.handleEvent = (event) => {
+                    if (event.target.type == "submit") {
+                        event.preventDefault()
+                        const entry = event.target.previousElementSibling
+                        const label = event.target.nextElementSibling
+                        const form = entry.parentNode
+                        /* la vérification */
+                        label.innerHTML = (entry.value == form.reponse) ? "Vrai" : "Faux"
+                    }
+                    if (event.target.type == "button") {
+                        const label = event.target.parentNode.parentNode
+                        const form = label.parentNode
+                        /* le corrigé */
+                        var txtReponse = `<p class="left">Le masque du réseau est :</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(form.masque_dec), form.masque, form.masque, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += `<p class="left">L'adresse de cet hôte en binaire est :</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(form.ip), form.masque, form.masque, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += `<p class="left">Pour obtenir l'adresse de broadcast, on remplace tous les bits de la partie hôte par "1" :</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(form.broadcast), form.masque, form.masque, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += `<p class="left">En décimal, l'adresse de broadcast est :</p>`
+                        txtReponse += `<p>${form.reponse}</p>`
+                        label.innerHTML = txtReponse
+                    }
+                };
+                form.addEventListener("click", form.handleEvent)
+                return fieldset;
+            },
+        ]
+        
+        liste_questions.forEach(fieldset => {container.appendChild(fieldset())})
+        
+        const fieldset1 = document.createElement("fieldset")
+        const legend1 = document.createElement("legend");
+        legend1.textContent = "Exercice 1";
+        fieldset1.appendChild(legend1);
+        container.appendChild(fieldset1)
+        const ips1 = {}
+        ips1.ip_host = [Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)]
+        ips1.masque = 16 + Math.floor(Math.random() * 13)
+        ips1.ip = net_id(ips1.ip_host, ips1.masque)
+        ips1.bits_supp = 1 + Math.floor(Math.random() * 3)
+        ips1.nb = 2**(ips1.bits_supp)
+        ips1.masque_dec = masque(ips1.masque+ips1.bits_supp)
+        
+        const exercice1 = [
+            () => {
+                const form = document.createElement("form");
+                /* l'énoncé */
+                form.innerHTML = `<p>On considère le réseau d'adresse ${ips1.ip.join(".")}/${ips1.masque}. On souhaite couper ce réseaux en ${ips1.nb} sous-réseaux.</p>`;
+                return form;
+            },
+            () => {
+                const form = document.createElement("form");
+                /* les données */
+                form.reponse = ips1.bits_supp
+                /* l'énoncé */
+                form.innerHTML = `
+                    <label name="question">1. Pour définir ces ${ips1.nb} sous-réseaux, il faut ajouter</label>
+                    <input type="text" name="rep"></input>
+                    <label>bits supplémentaires.</label>
+                    <input type="submit" value="Vérifier"/>
+                    <label></label>
+                    <div class="correction" name="correction"><div class="aDroite"><input type="button" value="Correction"/></div></div>
+                `;
+                form.handleEvent = (event) => {
+                    if (event.target.type == "submit") {
+                        event.preventDefault()
+                        const entry = event.target.previousElementSibling.previousElementSibling
+                        const label = event.target.nextElementSibling
+                        const form = entry.parentNode
+                        /* la vérification */
+                        label.innerHTML = (entry.value == form.reponse) ? "Vrai" : "Faux"
+                    }
+                    if (event.target.type == "button") {
+                        const label = event.target.parentNode.parentNode
+                        const form = label.parentNode
+                        /* le corrigé */
+                        var txtReponse = `<p class="left">2<sup>${ips1.bits_supp}</sup> = ${ips1.nb}, donc ${ips1.bits_supp == 1 ? "Un seul bit est nécessaire" : ips1.bits_supp + " bits sont nécessaires"} pour ajouter ${ips1.nb} sous-réseaux.<p>`
+                        label.innerHTML = txtReponse
+                    }
+                };
+                form.addEventListener("click", form.handleEvent)
+                return form;
+            },
+            () => {
+                const form = document.createElement("form");
+                /* les données */
+                form.reponse = ips1.masque_dec.join(".")
+                /* l'énoncé */
+                form.innerHTML = `
+                    <label name="question">2. Le masque qui permet de créer ces ${ips1.nb} sous-réseaux est :</label>
+                    <input type="text" name="rep"></input>
+                    <input type="submit" value="Vérifier"/>
+                    <label></label>
+                    <div class="correction" name="correction"><div class="aDroite"><input type="button" value="Correction"/></div></div>
+                `;
+                form.handleEvent = (event) => {
+                    if (event.target.type == "submit") {
+                        event.preventDefault()
+                        const entry = event.target.previousElementSibling
+                        const label = event.target.nextElementSibling
+                        const form = entry.parentNode
+                        /* la vérification */
+                        label.innerHTML = (entry.value == form.reponse) ? "Vrai" : "Faux"
+                    }
+                    if (event.target.type == "button") {
+                        const label = event.target.parentNode.parentNode
+                        const form = label.parentNode
+                        /* le corrigé */
+                        var txtReponse = `<p class="left">Le masque est composé de <font color="#ff6347">${ips1.masque}</font> + <font color="#3cb371">${ips1.bits_supp}</font> = ${ips1.masque + ips1.bits_supp} "1"</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(ips1.masque_dec), ips1.masque, ips1.masque+ips1.bits_supp, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += '<p class="left">En décimal, cela donne :</p>'
+                        txtReponse += `<p>${form.reponse}</p>`
+                        label.innerHTML = txtReponse
+                    }
+                };
+                form.addEventListener("click", form.handleEvent)
+                return form;
+            },
+        ]
+        
+        exercice1.forEach(q => {fieldset1.appendChild(q())})
+        
+        const fieldset2 = document.createElement("fieldset")
+        container.appendChild(fieldset2)
+        const exercice2 = []
+        exercice2.forEach(q => {fieldset2.appendChild(q())})
+    </script>
+</body>
+</html>
