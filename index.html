@@ -137,7 +137,7 @@
         
         function host_id(ip, n) {
         /* retourne le numéro de l'hôte (en binaire) à partir de l'ip de l'hôte et de la longueur du masque */
-            return Array.from(ip_bin(ip).join("")).slice(n, 31).join("")
+            return Array.from(ip_bin(ip).join("")).slice(n, 32).join("")
         }
         
         function broadcast(ip, n) {
