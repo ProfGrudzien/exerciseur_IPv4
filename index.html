@@ -76,6 +76,9 @@
         fieldset {
             margin-bottom: 50px;
         }
+        .centrer {
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -141,23 +144,17 @@
         /* retourne l'adresse de broadcast à partir de l'adresse d'un hôte et de la longueur du masque */
             brd = []
             for (let i=0; i<4; i++) {
-                if (8+i*8<n) {
-                    brd.push(ip[i])
-                } else if (i*8>n) {
-                    brd.push(255)
-                } else {
-                    const net_bin = ip_bin(ip)[i]
-                    const m_bin = ip_bin(masque(n))[i]
-                    var bin = ""
-                    for (let j=0; j<8; j++) {
-                        if (m_bin[j] == "1") {
-                            bin = bin + net_bin[i]
-                        } else {
-                            bin = bin + "1"
-                        }
+                const net_bin = ip_bin(ip)[i]
+                const m_bin = ip_bin(masque(n))[i]
+                var bin = ""
+                for (let j=0; j<8; j++) {
+                    if (m_bin[j] == "1") {
+                        bin = bin + net_bin[j]
+                    } else {
+                        bin = bin + "1"
                     }
-                    brd.push(parseInt(bin, 2))
                 }
+                brd.push(parseInt(bin, 2))
             }
             return brd
         }
@@ -191,7 +188,7 @@
             const p = a + Math.floor(a/8)
             const q = b + Math.floor(a/8)
             const L = Array.from(ip.join("."))
-            return `<font color=${c1}>${L.slice(0, p).join("")}</font><font color=${c2}>${L.slice(p, q).join("")}</font><font color=${c3}>${L.slice(q, L.length-1).join("")}</font>`
+            return `<font color=${c1}>${L.slice(0, p).join("")}</font><font color=${c2}>${L.slice(p, q).join("")}</font><font color=${c3}>${L.slice(q, L.length).join("")}</font>`
         }
         
         const liste_questions = [
@@ -417,7 +414,20 @@
         ips1.bits_supp = 1 + Math.floor(Math.random() * 3)
         ips1.nb = 2**(ips1.bits_supp)
         ips1.masque_dec = masque(ips1.masque+ips1.bits_supp)
-        
+        ips1.ip_sub = []
+        for (let i=0; i<ips1.nb; i++) {
+            const ip = Array.from(ip_bin(ips1.ip).join("."));
+            var bin = i.toString(2)
+            while (bin.length<ips1.bits_supp) {
+                bin = "0" + bin
+            }
+            for (let j=0; j<ips1.bits_supp; j++) {
+                const a = ips1.masque + j
+                ip[a + Math.floor(a/8)] = bin[j]
+            }
+            ips1.ip_sub.push(ip_dec(ip.join("").split(".")))
+        }
+        ips1.no_sub = Math.floor(Math.random() * ips1.nb)
         const exercice1 = [
             () => {
                 const form = document.createElement("form");
@@ -487,6 +497,144 @@
                         txtReponse += `<p>${en_couleur(ip_bin(ips1.masque_dec), ips1.masque, ips1.masque+ips1.bits_supp, "#ff6347", "#3cb371", "#1e90ff")}</p>`
                         txtReponse += '<p class="left">En décimal, cela donne :</p>'
                         txtReponse += `<p>${form.reponse}</p>`
+                        label.innerHTML = txtReponse
+                    }
+                };
+                form.addEventListener("click", form.handleEvent)
+                return form;
+            },
+            () => {
+                const form = document.createElement("form");
+                /* les données */
+                form.reponse = ips1.ip_sub
+                /* l'énoncé */
+                var consigne = `<label name="question">3. Quelle est l'adresse de chacun des ${ips1.nb} sous-réseaux ainsi définis ?</label>`
+                for (let i=0; i<ips1.nb; i++) {
+                    consigne += `<div class="centrer" id="1-${i}">`
+                    consigne += `<label>sous-réseau ${i} :</label>`
+                    consigne += '<input type="text" />'
+                    consigne += '<input type="submit" value="Vérifier"/>'
+                    consigne += '<label></label>'
+                    consigne += "</div>"
+                }
+                consigne += `<div class="correction" name="correction"><div class="aDroite"><input type="button" value="Correction"/></div></div>`
+                form.innerHTML = consigne
+                form.handleEvent = (event) => {
+                    if (event.target.type == "submit") {
+                        event.preventDefault()
+                        const entry = event.target.previousElementSibling
+                        const label = event.target.nextElementSibling
+                        const form = entry.parentNode.parentNode
+                        /* la vérification */
+                        const k = event.target.parentNode.id.split("-")[1]
+                        label.innerHTML = (entry.value == form.reponse[k].join(".")) ? "Vrai" : "Faux"
+                    }
+                    if (event.target.type == "button") {
+                        const label = event.target.parentNode.parentNode
+                        const form = label.parentNode
+                        /* le corrigé */
+                        var txtReponse = `<p class="left">On numérote ces réseaux grâce aux <font color="#3cb371">bits supplémentaires</font> du nouveau masque de réseau :</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(ips1.masque_dec), ips1.masque, ips1.masque+ips1.bits_supp, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += '<p class="left">En binaire, on obtient :</p>'
+                        for (let i=0; i<ips1.nb; i++) {
+                            txtReponse += `<p>sous-réseau ${i} : ${en_couleur(ip_bin(form.reponse[i]), ips1.masque, ips1.masque+ips1.bits_supp, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        }
+                        txtReponse += '<p class="left">En décimal, cela donne :</p>'
+                        for (let i=0; i<ips1.nb; i++) {
+                            txtReponse += `<p>sous-réseau ${i} : ${form.reponse[i].join(".")}</p>`
+                        }
+                        label.innerHTML = txtReponse
+                    }
+                };
+                form.addEventListener("click", form.handleEvent)
+                return form;
+            },
+            () => {
+                const form = document.createElement("form");
+                /* les données */
+                form.broadcast = broadcast(ips1.ip_sub[ips1.no_sub], ips1.masque + ips1.bits_supp)
+                form.reponse = form.broadcast.join(".")
+                /* l'énoncé */
+                form.innerHTML = `
+                    <label name="question">4. L'adresse de diffusion (broadcast) du sous-réseaux ${ips1.no_sub} est :</label>
+                    <input type="text" name="rep"></input>
+                    <input type="submit" value="Vérifier"/>
+                    <label></label>
+                    <div class="correction" name="correction"><div class="aDroite"><input type="button" value="Correction"/></div></div>
+                `;
+                form.handleEvent = (event) => {
+                    if (event.target.type == "submit") {
+                        event.preventDefault()
+                        const entry = event.target.previousElementSibling
+                        const label = event.target.nextElementSibling
+                        const form = entry.parentNode
+                        /* la vérification */
+                        label.innerHTML = (entry.value == form.reponse) ? "Vrai" : "Faux"
+                    }
+                    if (event.target.type == "button") {
+                        const label = event.target.parentNode.parentNode
+                        const form = label.parentNode
+                        /* le corrigé */
+                        var txtReponse = `<p class="left">Le masque sous-réseau ${ips1.no_sub} est :</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(ips1.masque_dec), ips1.masque, ips1.masque+ips1.bits_supp, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += `<p class="left">L'adresse du sous-réseau ${ips1.no_sub} en binaire est :</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(ips1.ip_sub[ips1.no_sub]), ips1.masque, ips1.masque+ips1.bits_supp, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += `<p class="left">Pour obtenir l'adresse de broadcast, on remplace tous les bits de la <font color="#1e90ff">partie hôte</font> par "1" :</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(form.broadcast), ips1.masque, ips1.masque+ips1.bits_supp, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += `<p class="left">En décimal, l'adresse de broadcast est :</p>`
+                        txtReponse += `<p>${form.reponse}</p>`
+                        label.innerHTML = txtReponse
+                    }
+                };
+                form.addEventListener("click", form.handleEvent)
+                return form;
+            },
+            () => {
+                const form = document.createElement("form");
+                /* les données */
+                form.broadcast = broadcast(ips1.ip_sub[ips1.no_sub], ips1.masque + ips1.bits_supp)
+                form.start = incremente(ips1.ip_sub[ips1.no_sub])
+                form.stop = decremente(form.broadcast)
+                form.reponse = {start : form.start.join("."), stop : form.stop.join(".")}
+                /* l'énoncé */
+                form.innerHTML = `
+                    <label name="question">5. La plage d'adresses utilisables sur le sous-réseaux ${ips1.no_sub} s'étend :
+                    <div class="start centrer">
+                        <label>de : </label>
+                        <input type="text" name="rep"></input>
+                        <input type="submit" value="Vérifier"/>
+                        <label></label>
+                    </div>
+                    <div class="stop centrer">
+                        <label>\u00a0 à : </label>
+                        <input type="text" name="rep"></input>
+                        <input type="submit" value="Vérifier"/>
+                        <label></label>
+                    </div>
+                    <div class="correction" name="correction"><div class="aDroite"><input type="button" value="Correction"/></div></div>
+                `;
+                form.handleEvent = (event) => {
+                    if (event.target.type == "submit") {
+                        event.preventDefault()
+                        const entry = event.target.previousElementSibling
+                        const label = event.target.nextElementSibling
+                        const div = entry.parentNode
+                        /* la vérification */
+                        label.innerHTML = (entry.value == form.reponse[div.classList[0]]) ? "Vrai" : "Faux"
+                    }
+                    if (event.target.type == "button") {
+                        const label = event.target.parentNode.parentNode
+                        const form = label.parentNode.parentNode
+                        /* le corrigé */
+                        var txtReponse = `<p class="left">L'adresse du sous-réseau ${ips1.no_sub} en binaire est :</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(ips1.ip_sub[ips1.no_sub]), ips1.masque, ips1.masque+ips1.bits_supp, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += `<p class="left">L'adresse de diffusion de ce sous-réseau en binaire est :</p>`
+                        txtReponse += `<p>${en_couleur(ip_bin(form.broadcast), ips1.masque, ips1.masque+ips1.bits_supp, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += `<p class="left">Les adresses disponibles sont les adresses comprises entre ces 2 adresses réservées :</p>`
+                        txtReponse += `<p>de ${en_couleur(ip_bin(form.start), ips1.masque, ips1.masque+ips1.bits_supp, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += `<p>\u00a0 à ${en_couleur(ip_bin(form.stop), ips1.masque, ips1.masque+ips1.bits_supp, "#ff6347", "#3cb371", "#1e90ff")}</p>`
+                        txtReponse += `<p class="left">En décimal, la plage s'étend :</p>`
+                        txtReponse += `<p>de ${form.reponse["start"]} à ${form.reponse["stop"]}</p>`
                         label.innerHTML = txtReponse
                     }
                 };
