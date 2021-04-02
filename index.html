@@ -186,7 +186,7 @@
         function en_couleur(ip, a, b, c1, c2, c3) {
             /* coupe l'ip en trois parties (aux bits a et b) et colorie les trois morceaux grâce aux couleurs c1, c2 et c3 */
             const p = a + Math.floor(a/8)
-            const q = b + Math.floor(a/8)
+            const q = b + Math.floor(b/8)
             const L = Array.from(ip.join("."))
             return `<font color=${c1}>${L.slice(0, p).join("")}</font><font color=${c2}>${L.slice(p, q).join("")}</font><font color=${c3}>${L.slice(q, L.length).join("")}</font>`
         }
@@ -409,7 +409,7 @@
         container.appendChild(fieldset1)
         const ips1 = {}
         ips1.ip_host = [Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256), Math.floor(Math.random() * 256)]
-        ips1.masque = 16 + Math.floor(Math.random() * 13)
+        ips1.masque = 16 + Math.floor(Math.random() * 11)
         ips1.ip = net_id(ips1.ip_host, ips1.masque)
         ips1.bits_supp = 1 + Math.floor(Math.random() * 3)
         ips1.nb = 2**(ips1.bits_supp)
@@ -649,6 +649,7 @@
         container.appendChild(fieldset2)
         const exercice2 = []
         exercice2.forEach(q => {fieldset2.appendChild(q())})
+        
     </script>
 </body>
 </html>
